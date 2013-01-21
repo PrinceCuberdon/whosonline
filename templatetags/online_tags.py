@@ -2,7 +2,7 @@
 
 from django import template
 
-from online.models import Online
+from whosonline.models import Online
 
 register = template.Library()
 
