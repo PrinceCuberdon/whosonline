@@ -39,7 +39,8 @@ except ImportError:
         HAVE_GEOIP = False
 
 from .models import Online, AnonymousOnline
-from notification import ajax_log
+from libs.notification import ajax_log
+
 
 def remove_older():
     """ Remove old anonymous and  and set users offline if  last_visit - 60 secs
@@ -47,7 +48,8 @@ def remove_older():
     before_time = datetime.datetime.now() - datetime.timedelta(seconds=60)
     AnonymousOnline.objects.filter(last_visit__lte=before_time).delete()
     Online.objects.filter(last_visit__lte=before_time).update(online=False)
-    
+
+
 def set_online(request):
     """ Set the user online. We use csrf_token cause a Chrome private navigation
     bug. """
@@ -81,6 +83,7 @@ def set_online(request):
         
     return HttpResponse('')
 
+
 def set_offline(request):
     """ Set the user offline """
     try:
@@ -100,34 +103,36 @@ def set_offline(request):
         ajax_log("online.views.Set_offline: %s "% e)
 
     return HttpResponse('')
-    
+
+
 def get_whos_online(request):
     """ Ajax request. """
     try:
         set_online(request)
         remove_older()
-        data = {}
-        data['users'] = []
-        data['visitors'] = AnonymousOnline.objects.all().values('pk').count()
+        data = {
+            'users': [],
+            'visitors': AnonymousOnline.objects.all().values('pk').count(),
+            'flags': []
+        }
         flags = []
-        data['flags'] = []
         if HAVE_GEOIP:
             if data['visitors'] > 0:
                 g = GeoIP()        
                 for ip in AnonymousOnline.objects.all().only('ip'):
                     country = g.country(str(ip.ip))
-                    try:
-                        flags.append({'code' : country['country_code'].lower(), 'name': country['country_name']})
-                    except Exception as e:
-                        ajax_log("GeoIP message %s" % e)                
+                    if country['country_code'] is not None:
+                        flags.append({
+                            'code': country['country_code'].lower(),
+                            'name': country['country_name']}
+                        )
                 codes = []
                 for flag in flags:
                     if flag['code'] in codes:
                         continue
                     codes.append(flag['code'])
                     data['flags'].append(flag)
-            
-            
+
         for user in Online.objects.filter(online=True):
             data['users'].append({
                 'pk': user.user.pk,
@@ -138,5 +143,3 @@ def get_whos_online(request):
     except Exception as e:
         ajax_log("online.views.get_whos_online : %s " % e)
     return HttpResponse('{}', mimetype="application/json")
-    
-    

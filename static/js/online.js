@@ -16,4 +16,5 @@ jCheckWhosOnline = function(callback, refreshTime) {
         .on('unload', function() {$.post('/offline/')});
         
     interval = setInterval(refresh, refreshTime);
-}
+};
+
