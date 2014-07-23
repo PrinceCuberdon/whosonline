@@ -26,20 +26,14 @@ from django.core.context_processors import csrf
 from django.http import HttpResponse
 
 try:
-    # Django <= 1.3
-    from django.contrib.gis.utils import GeoIP
+    from django.contrib.gis.geoip import GeoIP
     HAVE_GEOIP = True
 except ImportError:
-    # Django >= 1.4
-    try:
-        from django.contrib.gis.geoip import GeoIP
-        HAVE_GEOIP = True
-    except ImportError as e:
-        print e
-        HAVE_GEOIP = False
+    HAVE_GEOIP = False
 
 from .models import Online, AnonymousOnline
 from libs.notification import ajax_log
+from libs import JSONView, MustBeAjaxMixin
 
 
 def remove_older():
@@ -49,6 +43,30 @@ def remove_older():
     AnonymousOnline.objects.filter(last_visit__lte=before_time).delete()
     Online.objects.filter(last_visit__lte=before_time).update(online=False)
 
+
+class SetOnlineView(MustBeAjaxMixin, JSONView):
+    def get_data(self, request):
+        token = str(csrf(request)['csrf_token'])
+        if request.user.is_authenticated():
+            online, created = Online.objects.get_or_create(user=request.user, defaults={
+                'last_visit': datetime.datetime.now(),
+                'online': True
+            })
+            if not created:
+                online.last_visit = datetime.datetime.now()
+                online.online = True
+            online.save()
+        else:
+            anon, created = AnonymousOnline.objects.get_or_create(key=token, defaults={
+                'key': token,
+                'last_visit': datetime.datetime.now(),
+                'ip': request.META['REMOTE_ADDR']
+            })
+            if not created:
+                anon.last_visite = datetime.datetime.now()
+
+            anon.save()
+        remove_older()
 
 def set_online(request):
     """ Set the user online. We use csrf_token cause a Chrome private navigation
@@ -139,7 +157,7 @@ def get_whos_online(request):
                 'avatar': user.user.get_profile().avatar_or_default(),
                 'user': user.user.username
             })
-        return HttpResponse(json.dumps(data), mimetype="application/json")
+        return HttpResponse(json.dumps(data), content_type="application/json")
     except Exception as e:
         ajax_log("online.views.get_whos_online : %s " % e)
-    return HttpResponse('{}', mimetype="application/json")
+    return HttpResponse('{}', content_type="application/json")

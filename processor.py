@@ -22,10 +22,10 @@
 from django.contrib.auth.models import User
 from .models import AnonymousOnline, Online
 
+
 def online(request):
     """  """
-    users = []
-    [ users.append(u)  for u in list(Online.objects.filter(online=True).only('user__id'))]
+    users = [u for u in list(Online.objects.filter(online=True).only('user__id'))]
         
     return {
         'online_user_count': Online.objects.filter(online=True).only('pk').count(),

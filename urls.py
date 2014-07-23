@@ -19,10 +19,23 @@
 #   whether in an action of contract, tort or otherwise, arising from, out of or in
 #   connection with the software or the use or other dealings in the Software.
 
-from django.conf.urls.defaults import patterns, include, url
+from django.conf.urls import patterns, include, url
 
 urlpatterns = patterns('whosonline',
-    url("^online/$",        'views.set_online', name="online"),
-    url('^offline/$',       'views.set_offline', name="offline"),
-    url('^whosonline/$',    'views.get_whos_online', name="whosonline"),
+    url(
+        "^online/$",
+        'views.set_online',
+        name="online"
+    ),
+
+    url('^offline/$',
+        'views.set_offline',
+        name="offline"
+    ),
+
+    url(
+        '^whosonline/$',
+        'views.get_whos_online',
+        name="whosonline"
+    ),
 )

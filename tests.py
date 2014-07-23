@@ -24,13 +24,11 @@ Test for Online app
 """
 
 from django.test import TestCase, Client
-from django.contrib.auth.models import User
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from bandcochon.models import Utilisateur
+from core.bandcochon.models import Utilisateur
 
-from .models import *
 from .processor import *
 from .views import *
 
