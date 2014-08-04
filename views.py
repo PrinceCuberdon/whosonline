@@ -57,7 +57,9 @@ class SetOnlineView(MustBeAjaxMixin, JSONView):
                 online.online = True
             online.save()
         else:
-            request.META.setdefault('REMOTE_ADDR', request.META.get('HTTP_X_REAL_IP', '1.1.1.1'))
+            if 'HTTP_X_REAL_IP' in request.META:
+                request.META['REMOTE_ADDR'] = request.META['HTTP_X_REAL_IP']
+
             anon, created = AnonymousOnline.objects.get_or_create(key=token, defaults={
                 'key': token,
                 'last_visit': datetime.datetime.now(),
@@ -85,7 +87,9 @@ def set_online(request):
                 online.online = True
             online.save()
         else:
-            request.META.setdefault('REMOTE_ADDR', request.META.get('HTTP_X_REAL_IP', '1.1.1.1'))
+            if 'HTTP_X_REAL_IP' in request.META:
+                request.META['REMOTE_ADDR'] = request.META['HTTP_X_REAL_IP']
+
             anon, created = AnonymousOnline.objects.get_or_create(key=token, defaults={
                 'key': token,
                 'last_visit': datetime.datetime.now(),
