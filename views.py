@@ -68,10 +68,11 @@ class SetOnlineView(MustBeAjaxMixin, JSONView):
             anon.save()
         remove_older()
 
+
 def set_online(request):
     """ Set the user online. We use csrf_token cause a Chrome private navigation
     bug. """
-    token = str(csrf(request)['csrf_token'])
+    token = request.session.session_key
     try:
         if request.user.is_authenticated():
             online, created = Online.objects.get_or_create(user=request.user, defaults={
