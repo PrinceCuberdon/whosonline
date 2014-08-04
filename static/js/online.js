@@ -21,7 +21,7 @@ var CheckWhosOnline = function(callback, refreshTime) {
                 if (get_xhr.readyState === 4 && get_xhr.status === 200) {
                     callback(JSON.parse(get_xhr.responseText));
                 }
-            }
+            };
             get_xhr.send(null);
         };
         

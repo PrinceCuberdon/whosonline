@@ -29,7 +29,7 @@ class OnlineAdmin(admin.ModelAdmin):
 
 
 class AnonymousOnlineAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'last_visit', )
+    list_display = ('__unicode__', 'last_visit', 'ip', )
 
 
 admin.site.register(Online, OnlineAdmin)

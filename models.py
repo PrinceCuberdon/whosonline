@@ -65,7 +65,7 @@ class AnonymousOnline(models.Model):
     )
     
     def __unicode__(self):
-        return self.key
+        return unicode(self.key)
     
     class Meta:
         db_table ="online_anonymousonline"
