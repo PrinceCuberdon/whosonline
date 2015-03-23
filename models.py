@@ -39,6 +39,13 @@ class Online(models.Model):
         help_text=u"Est-ce que l'utilisateur est en ligne ?"
     )
         
+    referer = models.CharField(
+        max_length=200,
+        verbose_name="Derniere visite",
+        help_text="Derniere page visitee.",
+        default="Non Applicable"
+    )
+    
     def __unicode__(self):
         return self.user.username
     
@@ -62,6 +69,12 @@ class AnonymousOnline(models.Model):
     ip = models.IPAddressField(
         null=True,
         blank=True
+    )
+    
+    referer = models.CharField(
+        max_length=200,
+        verbose_name="Derniere visite",
+        help_text="Derniere page visitee."
     )
     
     def __unicode__(self):

@@ -1,0 +1,95 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .wol-center { text-align: center;}
+        .wol-line { line-height: 4em;}
+        .wol-count { font-size: 48px; font-weight: bold; vertical-align: middle; }
+        .wol-margintop60 { margin-top: 60px; }
+        .wol-label { display: inline-block; width: 150px; }
+        #foo { height: 30px;}
+        #foo.wol-hidden { opacity: 0; }
+        table tbody tr td img { vertical-align: middle; max-width: 24px;padding-right: 10px;}
+    </style>
+    <script type="text/javascript">
+        function getJSON($) {
+            var template = '<tr><td>{user}</td><td>{country}</td><td>{url}</td><td>{time}</td></tr>';
+
+            $.getJSON("{% url 'admin_get_whos_online' %}")
+            .done(function(data) {
+                var t = "";
+                document.getElementById("hunters-count").innerHTML = data.hunters.length || 0;
+                document.getElementById("visitors-count").innerHTML = data.anonymous.length || 0;
+                
+                if (data.hunters.length == 0 && data.anonymous.length == 0) {
+                    t = '<tr><td colspan="4">Il n\'y a personne en ligne</td></tr>';
+                } else {
+                    for(var u in data.hunters) {
+                        t = template.replace('{user}', data.hunters[u].user);
+                        t = t.replace('{url}', data.hunters[u].url)
+                        t = t.replace('{country}', '');
+                        t = t.replace('{time}', data.hunters[u].time);
+                    }
+                    $("table tbody").html(t);
+                    
+                    for(var u in data.anonymous) {
+                        t = template.replace('{user}', data.anonymous[u].user);
+                        t = t.replace('{url}', data.anonymous[u].url)
+                        t = t.replace('{country}', data.anonymous[u].country);
+                        t = t.replace('{time}', data.anonymous[u].time);
+                    }
+                }
+                $("table tbody").html(t);
+            }).fail(function(xhr) {
+                alert("Impossible de faire le boulot : " + (xhr.status == 404 ? "URL Not found" : (xhr.status == 500 ? "Crash serveur" : "")));
+            }).always(function() {
+                $("#foo").addClass("wol-hidden");
+            });
+        }
+        
+        (function($) {
+            getJSON($);
+            setInterval(function(){getJSON($)}, 5000);
+        })(grp.jQuery);
+    </script> 
+{% endblock %}
+
+{% block breadcrumbs %}
+    <ul class="breadcrumbs">
+        <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+        <li> <a href="../..">Whosonline</a></li>
+        <li> <a href="..">Online</a></li>
+        <li> <strong>Realtime</strong></li>
+    </ul>
+{% endblock %}
+
+
+{% block content %}
+<div>
+    <div class="wol-line">
+        <span class="wol-label">Nombre de chasseurs :</span><span class="wol-count" id="hunters-count">0</span>
+    </div>
+    <div class="wol-line">
+        <span class="wol-label">Nombre de visiteurs :</span> <span class="wol-count" id="visitors-count">0</span> 
+    </div>
+    
+</div>
+<div class="wol-margintop60">
+    <h2>Chasseurs actuellement en lignes</h2>
+    <div id="foo" class="wol-hidden"></div>
+    <table style="width: 100%">
+        <thead>
+            <tr>
+                <th style="width: 20%">Chasseur</th>
+                <th style="width: 20%">Country</th>
+                <th>URL actuelle</th>
+                <th style="width: 20%">Heure de connexion</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -34,3 +34,4 @@ class AnonymousOnlineAdmin(admin.ModelAdmin):
 
 admin.site.register(Online, OnlineAdmin)
 admin.site.register(AnonymousOnline, AnonymousOnlineAdmin)
+

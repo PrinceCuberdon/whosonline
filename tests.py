@@ -28,9 +28,9 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from core.bandcochon.models import Utilisateur
-
 from .processor import *
 from .views import *
+
 
 class TestOnlineModel(TestCase):
     def setUp(self):

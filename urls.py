@@ -19,7 +19,8 @@
 #   whether in an action of contract, tort or otherwise, arising from, out of or in
 #   connection with the software or the use or other dealings in the Software.
 
-from django.conf.urls import patterns, include, url
+from django.conf.urls import patterns, url
+from django.views.generic import TemplateView
 
 urlpatterns = patterns('whosonline',
     url(
@@ -38,4 +39,16 @@ urlpatterns = patterns('whosonline',
         'views.get_whos_online',
         name="whosonline"
     ),
+    
+    url(
+        '^admin/whosonline/online/update/$',
+        'views.admin_get_whos_online',
+        name='admin_get_whos_online'
+    ), 
+    url(
+        '^admin/whosonline/online/realtime/$',
+        TemplateView.as_view(template_name="admin/whosonline/online/realtime.html"),
+        {'title': "Who's online Realtime"},
+        name='admin_whosonline_realtime'
+    )
 )
