@@ -37,7 +37,7 @@
                     for(var u in data.anonymous) {
                         t = template.replace('{user}', data.anonymous[u].user);
                         t = t.replace('{url}', data.anonymous[u].url)
-                        t = t.replace('{country}', data.anonymous[u].country);
+                        t = t.replace('{country}', data.anonymous[u].country.country_name);
                         t = t.replace('{time}', data.anonymous[u].time);
                     }
                 }
