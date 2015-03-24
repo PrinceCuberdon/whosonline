@@ -189,10 +189,10 @@ def admin_get_whos_online(request):
     geoIP = GeoIP() if HAVE_GEOIP else None
     for anon in list(AnonymousOnline.objects.all()):
         data['anonymous'].append({
-            'user': 'Anonymous',
+            'user': 'Anonymous : {0}'.format(anon.ip),
             'country': geoIP.country(str(anon.ip)) if HAVE_GEOIP else "N/A",
             'url': anon.referer,
-            #'time': str(anon.last_visit)
+            'time': str(anon.last_visit)
         })
         
     for hunter in list(Online.objects.filter(online=True)):

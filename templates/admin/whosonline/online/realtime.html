@@ -19,26 +19,29 @@
 
             $.getJSON("{% url 'admin_get_whos_online' %}")
             .done(function(data) {
-                var t = "";
+                var t = "", hunter, anon;
                 document.getElementById("hunters-count").innerHTML = data.hunters.length || 0;
                 document.getElementById("visitors-count").innerHTML = data.anonymous.length || 0;
                 
                 if (data.hunters.length == 0 && data.anonymous.length == 0) {
                     t = '<tr><td colspan="4">Il n\'y a personne en ligne</td></tr>';
                 } else {
-                    for(var u in data.hunters) {
-                        t = template.replace('{user}', data.hunters[u].user);
-                        t = t.replace('{url}', data.hunters[u].url)
-                        t = t.replace('{country}', '');
-                        t = t.replace('{time}', data.hunters[u].time);
+                    for (var i = 0, _l = data.hunters.length; i < _l; i++) {
+                        hunter = data.hunters[i];
+                        t += template
+                        .replace('{user}', hunter.user)
+                        .replace('{url}', hunter.url)
+                        .replace('{country}', '')
+                        .replace('{time}', hunter.time);
                     }
-                    $("table tbody").html(t);
                     
-                    for(var u in data.anonymous) {
-                        t = template.replace('{user}', data.anonymous[u].user);
-                        t = t.replace('{url}', data.anonymous[u].url)
-                        t = t.replace('{country}', data.anonymous[u].country.country_name);
-                        t = t.replace('{time}', data.anonymous[u].time);
+                    for(i=0, _l=data.anonymous.length; i < _l; i++) {
+                        anon = data.anonymous[i];
+                        t += template
+                        .replace('{user}', anon.user)
+                        .replace('{url}', anon.url)
+                        .replace('{country}', anon.country.country_name || "Inconnu")
+                        .replace('{time}', anon.time);
                     }
                 }
                 $("table tbody").html(t);
