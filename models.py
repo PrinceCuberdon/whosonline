@@ -66,7 +66,7 @@ class AnonymousOnline(models.Model):
         help_text=u"Dernière heure de passage"
     )
 
-    ip = models.IPAddressField(
+    ip = models.GenericIPAddressField(
         null=True,
         blank=True
     )
