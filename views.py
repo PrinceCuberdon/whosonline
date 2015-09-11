@@ -25,7 +25,6 @@ import json
 from django.core.context_processors import csrf
 from django.http import HttpResponse
 
-
 try:
     from django.contrib.gis.geoip import GeoIP
     HAVE_GEOIP = True
@@ -33,7 +32,7 @@ except ImportError:
     HAVE_GEOIP = False
 
 from .models import Online, AnonymousOnline
-from libs.notification import ajax_log
+from notification import ajax_log
 from libs import JSONView, MustBeAjaxMixin
 
 
