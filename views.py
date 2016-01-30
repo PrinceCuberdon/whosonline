@@ -24,9 +24,11 @@ import json
 
 from django.core.context_processors import csrf
 from django.http import HttpResponse
+from django.utils import timezone
 
 try:
     from django.contrib.gis.geoip import GeoIP
+
     HAVE_GEOIP = True
 except ImportError:
     HAVE_GEOIP = False
@@ -39,7 +41,7 @@ from libs import JSONView, MustBeAjaxMixin
 def remove_older():
     """ Remove old anonymous and  and set users offline if  last_visit - 60 secs
     (cause status are refreshed every 30 s) """
-    before_time = datetime.datetime.now() - datetime.timedelta(seconds=60)
+    before_time = timezone.now() - timezone.timedelta(seconds=60)
     AnonymousOnline.objects.filter(last_visit__lte=before_time).delete()
     Online.objects.filter(last_visit__lte=before_time).update(online=False)
 
@@ -49,13 +51,13 @@ class SetOnlineView(MustBeAjaxMixin, JSONView):
         token = str(csrf(request)['csrf_token'])
         if request.user.is_authenticated():
             online, created = Online.objects.get_or_create(user=request.user, defaults={
-                'last_visit': datetime.datetime.now(),
+                'last_visit': timezone.now(),
                 'online': True,
                 'url': request.META['HTTP_REFERER']
             })
-            
+
             if not created:
-                online.last_visit = datetime.datetime.now()
+                online.last_visit = timezone.now()
                 online.online = True
             online.save()
         else:
@@ -64,12 +66,12 @@ class SetOnlineView(MustBeAjaxMixin, JSONView):
 
             anon, created = AnonymousOnline.objects.get_or_create(key=token, defaults={
                 'key': token,
-                'last_visit': datetime.datetime.now(),
+                'last_visit': timezone.now(),
                 'ip': request.META['REMOTE_ADDR'],
                 'url': request.META['HTTP_REFERER']
             })
             if not created:
-                anon.last_visite = datetime.datetime.now()
+                anon.last_visite = timezone.now()
 
             anon.save()
         remove_older()
@@ -82,13 +84,13 @@ def set_online(request):
     try:
         if request.user.is_authenticated():
             online, created = Online.objects.get_or_create(user=request.user, defaults={
-                'last_visit': datetime.datetime.now(),
+                'last_visit': timezone.timezone.now(),
                 'online': True
             })
             if not created:
-                online.last_visit = datetime.datetime.now()
+                online.last_visit = timezone.timezone.now()
                 online.online = True
-                
+
             online.referer = request.META['HTTP_REFERER']
             online.save()
         else:
@@ -97,22 +99,21 @@ def set_online(request):
 
             anon, created = AnonymousOnline.objects.get_or_create(key=token, defaults={
                 'key': token,
-                'last_visit': datetime.datetime.now(),
+                'last_visit': timezone.timezone.now(),
                 'ip': request.META['REMOTE_ADDR']
             })
 
             if not created:
-                anon.last_visite = datetime.datetime.now()
+                anon.last_visite = timezone.timezone.now()
 
             anon.referer = request.META['HTTP_REFERER']
             anon.save()
         remove_older()
-                
+
     except Exception as e:
         """ sometime the database is not enougth fast. So we remove all keys """
         AnonymousOnline.objects.filter(key=token).delete()
-        ajax_log("online.views.setonline : %s" % e)
-        
+
     return HttpResponse('')
 
 
@@ -130,9 +131,9 @@ def set_offline(request):
                 pass
 
         remove_older();
-            
+
     except Exception as e:
-        ajax_log("online.views.Set_offline: %s "% e)
+        ajax_log("online.views.Set_offline: %s " % e)
 
     return HttpResponse('')
 
@@ -147,7 +148,7 @@ def get_whos_online(request):
             'visitors': AnonymousOnline.objects.all().values('pk').count(),
             'flags': []
         }
-        
+
         flags = []
         if HAVE_GEOIP:
             if data['visitors'] > 0:
@@ -169,13 +170,16 @@ def get_whos_online(request):
         for user in Online.objects.filter(online=True):
             data['users'].append({
                 'pk': user.user.pk,
-                'avatar': user.user.get_profile().avatar_or_default(),
+                'avatar': user.user.profile.avatar_or_default(),
                 'user': user.user.username
             })
         return HttpResponse(json.dumps(data), content_type="application/json")
+
     except Exception as e:
         ajax_log("online.views.get_whos_online : %s " % e)
+
     return HttpResponse('{}', content_type="application/json")
+
 
 def admin_get_whos_online(request):
     """ Ajax request. """
@@ -184,7 +188,7 @@ def admin_get_whos_online(request):
         'anonymous': [],
         'hunters': []
     }
-    
+
     geoIP = GeoIP() if HAVE_GEOIP else None
     for anon in list(AnonymousOnline.objects.all()):
         data['anonymous'].append({
@@ -193,14 +197,14 @@ def admin_get_whos_online(request):
             'url': anon.referer,
             'time': str(anon.last_visit)
         })
-        
+
     for hunter in list(Online.objects.filter(online=True)):
         data['hunters'].append({
             'user': hunter.user.username,
             'url': hunter.referer,
             'time': str(hunter.last_visit)
         })
-    
+
     remove_older()
-    
+
     return HttpResponse(json.dumps(data), content_type="application/json")
