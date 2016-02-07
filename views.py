@@ -19,7 +19,6 @@
 #   whether in an action of contract, tort or otherwise, arising from, out of or in
 #   connection with the software or the use or other dealings in the Software.
 
-import datetime
 import json
 
 from django.core.context_processors import csrf
@@ -71,7 +70,7 @@ class SetOnlineView(MustBeAjaxMixin, JSONView):
                 'url': request.META['HTTP_REFERER']
             })
             if not created:
-                anon.last_visite = timezone.now()
+                anon.last_visit = timezone.now()
 
             anon.save()
         remove_older()
@@ -84,14 +83,14 @@ def set_online(request):
     try:
         if request.user.is_authenticated():
             online, created = Online.objects.get_or_create(user=request.user, defaults={
-                'last_visit': timezone.timezone.now(),
+                'last_visit': timezone.now(),
                 'online': True
             })
             if not created:
-                online.last_visit = timezone.timezone.now()
+                online.last_visit = timezone.now()
                 online.online = True
 
-            online.referer = request.META['HTTP_REFERER']
+            online.referer = request.META.get('HTTP_REFERER', 'Unknown referer')
             online.save()
         else:
             if 'HTTP_X_REAL_IP' in request.META:
@@ -99,14 +98,14 @@ def set_online(request):
 
             anon, created = AnonymousOnline.objects.get_or_create(key=token, defaults={
                 'key': token,
-                'last_visit': timezone.timezone.now(),
+                'last_visit': timezone.now(),
                 'ip': request.META['REMOTE_ADDR']
             })
 
             if not created:
-                anon.last_visite = timezone.timezone.now()
+                anon.last_visit = timezone.now()
 
-            anon.referer = request.META['HTTP_REFERER']
+            anon.referer = request.META.get('HTTP_REFERER', 'Unknown referer')
             anon.save()
         remove_older()
 
@@ -125,12 +124,9 @@ def set_offline(request):
             online.online = False
             online.save()
         else:
-            try:
-                AnonymousOnline.objects.filter(key=request.session.session_key).delete()
-            except:
-                pass
+            AnonymousOnline.objects.filter(key=request.session.session_key).delete()
 
-        remove_older();
+        remove_older()
 
     except Exception as e:
         ajax_log("online.views.Set_offline: %s " % e)

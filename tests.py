@@ -22,6 +22,9 @@
 """
 Test for Online app
 """
+import datetime
+from importlib import import_module
+
 from django.contrib.auth.models import User
 
 from django.test import TestCase, Client
@@ -38,7 +41,7 @@ class TestOnlineModel(TestCase):
         self.user = User.objects.create(username="testusername", email="test@example.com")
 
     def test_create(self):
-        ol = Online.objects.create(user=self.user, last_visit=datetime.datetime.now(), online=True)
+        ol = Online.objects.create(user=self.user, last_visit=timezone.now(), online=True)
         self.assertTrue(ol.online)
         self.assertEqual(unicode(ol), u"testusername")
 
@@ -48,57 +51,71 @@ class TestProcessor(TestCase):
         user = User.objects.create(username="testusername", email="test@example.com")
         self.utili = Utilisateur.objects.create(user=user)
         self.anon = AnonymousOnline.objects.create(key="testkey", ip="127.0.0.1")
-        self.ol = Online.objects.create(user=user, last_visit=datetime.datetime.now(), online=True)
+        self.ol = Online.objects.create(user=user, last_visit=timezone.now(), online=True)
 
     def test_online(self):
         resp = online(None)
         self.assertIsInstance(resp, dict)
 
-        self.assertTrue(resp.has_key('online_user_count'))
-        self.assertTrue(resp.has_key('online_anonymous_count'))
-        self.assertTrue(resp.has_key('online_user_avatars'))
+        self.assertIn('online_user_count', resp)
+        self.assertIn('online_anonymous_count', resp)
+        self.assertIn('online_users', resp)
 
         self.assertEqual(resp['online_user_count'], 1)
         self.assertEqual(resp['online_anonymous_count'], 1)
-        self.assertIsInstance(resp['online_user_avatars'], list)
-        self.assertEqual(len(resp['online_user_avatars']), 1)
-        self.assertEqual(resp['online_user_avatars'][0], settings.BANDCOCHON_CONFIG.Avatar.default)
+        self.assertIsInstance(resp['online_users'], list)
+        self.assertEqual(len(resp['online_users']), 1)
 
 
 class TestView(TestCase):
+    def _create_session_client(self):
+        """
+        Create a new client with session inside
+
+        :return: A client object
+        """
+        c = Client()
+        session_engine = import_module(settings.SESSION_ENGINE)
+        store = session_engine.SessionStore()
+        store.save()
+        c.cookies[settings.SESSION_COOKIE_NAME] = store.session_key
+
+        return c
+
     def setUp(self):
         self.user = User.objects.create_user(username="testusername", email="test@example.com", password="testpassword")
         self.utili = Utilisateur.objects.create(user=self.user)
 
     def test_remove_older(self):
-        anon = AnonymousOnline.objects.create(key="testkey", ip="127.0.0.1")
+        AnonymousOnline.objects.create(key="testkey", ip="127.0.0.1")
         anon_old = AnonymousOnline.objects.create(key="anothertestkey", ip="127.0.0.1")
-        anon_old.last_visit = datetime.datetime.now() - datetime.timedelta(seconds=61)
+        anon_old.last_visit = timezone.now() - datetime.timedelta(seconds=61)
         anon_old.save()
 
-        ol = Online.objects.create(user=self.user, last_visit=datetime.datetime.now(), online=True)
-        old = Online.objects.create(user=self.user, last_visit=datetime.datetime.now() - datetime.timedelta(seconds=61), online=True)
+        Online.objects.create(user=self.user, last_visit=timezone.now(), online=True)
+        Online.objects.create(user=self.user, last_visit=timezone.now() - datetime.timedelta(seconds=61), online=True)
 
         remove_older()
         self.assertEqual(Online.objects.filter(online=True).count(), 1)
         self.assertEqual(AnonymousOnline.objects.all().count(), 1)
 
     def test_set_online_anonymous(self):
-        c = Client()
-        response = c.post(reverse('online'))
+        c = self._create_session_client()
+        c.post(reverse('online'))
         self.assertEqual(Online.objects.all().count(), 0)
         self.assertEqual(AnonymousOnline.objects.all().count(), 1)
 
     def test_set_online_registred(self):
-        client = Client()
+        client = self._create_session_client()
         success = client.login(username="testusername", password="testpassword")
         self.assertTrue(success)
-        response = client.post(reverse('online'))
+        client.post(reverse('online'))
         self.assertEqual(Online.objects.all().count(), 1)
         self.assertEqual(AnonymousOnline.objects.all().count(), 0)
 
     def test_set_offline_anonymous(self):
-        c = Client()
+        c = self._create_session_client()
+
         c.post(reverse('online'))  # Create an entry
         self.assertEqual(AnonymousOnline.objects.all().count(), 1)
         c.post(reverse('offline'))  # Remove this entry
@@ -106,7 +123,7 @@ class TestView(TestCase):
         self.assertEqual(AnonymousOnline.objects.all().count(), 0)
 
     def test_set_offline_registred(self):
-        c = Client()
+        c = self._create_session_client()
         success = c.login(username="testusername", password="testpassword")
         self.assertTrue(success)
         c.post(reverse('online'))  # Create an entry
@@ -118,7 +135,7 @@ class TestView(TestCase):
 
     def test_get_whos_online_simple(self):
         """ Test values and types """
-        c = Client()
+        c = self._create_session_client()
         response = c.get(reverse('whosonline'))
         self.assertEqual(response['Content-Type'], "application/json")
         response = json.loads(response.content)
@@ -136,8 +153,8 @@ class TestView(TestCase):
 
     def test_get_whos_online_registred(self):
         """ Type and values are tested in test_get_whos_online_simple """
-        c = Client()
-        success = c.login(username="testusername", password="testpassword")
+        c = self._create_session_client()
+        c.login(username="testusername", password="testpassword")
         response = c.get(reverse('whosonline'))
         response = json.loads(response.content)
         self.assertEqual(response['visitors'], 0)
@@ -145,8 +162,8 @@ class TestView(TestCase):
         self.assertEqual(len(response['users']), 1)
 
     def test_get_whos_online_flags(self):
-        anon = AnonymousOnline.objects.create(key="anothertestkey", ip="5.9.73.34")  # bandcochon.re IP (Germany)
-        c = Client()
+        AnonymousOnline.objects.create(key="anothertestkey", ip="5.9.73.34")  # bandcochon.re IP (Germany)
+        c = self._create_session_client()
         response = c.get(reverse('whosonline'))
         result = json.loads(response.content)
         self.assertTrue(result.has_key('flags'))
