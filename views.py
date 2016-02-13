@@ -22,8 +22,9 @@
 import json
 
 from django.core.context_processors import csrf
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
+from django.views.generic import View
 
 try:
     from django.contrib.gis.geoip import GeoIP
@@ -34,7 +35,7 @@ except ImportError:
 
 from .models import Online, AnonymousOnline
 from notification import ajax_log
-from libs import JSONView, MustBeAjaxMixin
+from libs import MustBeAjaxMixin
 
 
 def remove_older():
@@ -45,8 +46,8 @@ def remove_older():
     Online.objects.filter(last_visit__lte=before_time).update(online=False)
 
 
-class SetOnlineView(MustBeAjaxMixin, JSONView):
-    def get_data(self, request):
+class SetOnlineView(MustBeAjaxMixin, View):
+    def get(self, request):
         token = str(csrf(request)['csrf_token'])
         if request.user.is_authenticated():
             online, created = Online.objects.get_or_create(user=request.user, defaults={
@@ -74,6 +75,8 @@ class SetOnlineView(MustBeAjaxMixin, JSONView):
 
             anon.save()
         remove_older()
+
+        return JsonResponse({'success': True})
 
 
 def set_online(request):
