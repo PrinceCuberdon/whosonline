@@ -26,9 +26,9 @@ import datetime
 from importlib import import_module
 
 from django.contrib.auth.models import User
-
 from django.test import TestCase, Client
 from django.conf import settings
+
 from django.core.urlresolvers import reverse
 
 from core.bandcochon.models import Utilisateur

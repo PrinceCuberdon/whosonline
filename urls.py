@@ -22,14 +22,17 @@
 from django.conf.urls import patterns, url
 from django.views.generic import TemplateView
 
-urlpatterns = patterns('whosonline',
+urlpatterns = patterns(
+    'whosonline',
+
     url(
         "^online/$",
         'views.set_online',
         name="online"
     ),
 
-    url('^offline/$',
+    url(
+        '^offline/$',
         'views.set_offline',
         name="offline"
     ),
@@ -39,12 +42,12 @@ urlpatterns = patterns('whosonline',
         'views.get_whos_online',
         name="whosonline"
     ),
-    
+
     url(
         '^admin/whosonline/online/update/$',
         'views.admin_get_whos_online',
         name='admin_get_whos_online'
-    ), 
+    ),
     url(
         '^admin/whosonline/online/realtime/$',
         TemplateView.as_view(template_name="admin/whosonline/online/realtime.html"),

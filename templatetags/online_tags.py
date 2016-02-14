@@ -6,6 +6,7 @@ from whosonline.models import Online
 
 register = template.Library()
 
+
 @register.filter
 def is_online(value):
     """ Is online is not used anymore """

@@ -25,13 +25,7 @@ from django.core.context_processors import csrf
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.generic import View
-
-try:
-    from django.contrib.gis.geoip import GeoIP
-
-    HAVE_GEOIP = True
-except ImportError:
-    HAVE_GEOIP = False
+from django.contrib.gis.geoip import GeoIP
 
 from .models import Online, AnonymousOnline
 from notification import ajax_log
@@ -112,7 +106,7 @@ def set_online(request):
             anon.save()
         remove_older()
 
-    except Exception as e:
+    except:
         """ sometime the database is not enougth fast. So we remove all keys """
         AnonymousOnline.objects.filter(key=token).delete()
 
@@ -149,22 +143,21 @@ def get_whos_online(request):
         }
 
         flags = []
-        if HAVE_GEOIP:
-            if data['visitors'] > 0:
-                g = GeoIP()
-                for ip in AnonymousOnline.objects.all().only('ip'):
-                    country = g.country(str(ip.ip))
-                    if country['country_code'] is not None:
-                        flags.append({
-                            'code': country['country_code'].lower(),
-                            'name': country['country_name']}
-                        )
-                codes = []
-                for flag in flags:
-                    if flag['code'] in codes:
-                        continue
-                    codes.append(flag['code'])
-                    data['flags'].append(flag)
+        if data['visitors'] > 0:
+            geoip = GeoIP()
+            for ip in AnonymousOnline.objects.all().only('ip'):
+                country = geoip.country(str(ip.ip))
+                if country['country_code'] is not None:
+                    flags.append({
+                        'code': country['country_code'].lower(),
+                        'name': country['country_name']}
+                    )
+            codes = []
+            for flag in flags:
+                if flag['code'] in codes:
+                    continue
+                codes.append(flag['code'])
+                data['flags'].append(flag)
 
         for user in Online.objects.filter(online=True):
             data['users'].append({
@@ -188,11 +181,11 @@ def admin_get_whos_online(request):
         'hunters': []
     }
 
-    geoIP = GeoIP() if HAVE_GEOIP else None
+    geoip = GeoIP()
     for anon in list(AnonymousOnline.objects.all()):
         data['anonymous'].append({
             'user': 'Anonymous : {0}'.format(anon.ip),
-            'country': geoIP.country(str(anon.ip)) if HAVE_GEOIP else "N/A",
+            'country': geoip.country(str(anon.ip)),
             'url': anon.referer,
             'time': str(anon.last_visit)
         })
@@ -206,4 +199,4 @@ def admin_get_whos_online(request):
 
     remove_older()
 
-    return HttpResponse(json.dumps(data), content_type="application/json")
+    return JsonResponse(data)
