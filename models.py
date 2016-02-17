@@ -54,6 +54,7 @@ class Online(models.Model):
         verbose_name = "Qui est en ligne ?"
         verbose_name_plural = "Qui est en ligne ?"
         db_table = "online_online"
+        app_label = "whosonline"
 
 
 class AnonymousOnline(models.Model):
@@ -83,3 +84,4 @@ class AnonymousOnline(models.Model):
 
     class Meta:
         db_table = "online_anonymousonline"
+        app_label = "whosonline"
