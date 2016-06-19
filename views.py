@@ -25,7 +25,11 @@ from django.core.context_processors import csrf
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.generic import View
-from django.contrib.gis.geoip import GeoIP
+try:
+	from django.contrib.gis.geoip import GeoIP
+except ImportError:
+	# TODO: Fallback
+	import pygeoip as GeoIP
 
 from .models import Online, AnonymousOnline
 from notification import ajax_log
@@ -87,7 +91,7 @@ def set_online(request):
                 online.last_visit = timezone.now()
                 online.online = True
 
-            online.referer = request.META.get('HTTP_REFERER', 'Unknown referer')
+            online.referer = request.META.get('HTTP_REFERER')
             online.save()
         else:
             if 'HTTP_X_REAL_IP' in request.META:
@@ -102,7 +106,7 @@ def set_online(request):
             if not created:
                 anon.last_visit = timezone.now()
 
-            anon.referer = request.META.get('HTTP_REFERER', 'Unknown referer')
+            anon.referer = request.META.get('HTTP_REFERER')
             anon.save()
         remove_older()
 
