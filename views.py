@@ -20,20 +20,23 @@
 #   connection with the software or the use or other dealings in the Software.
 
 import json
+import logging
 
 from django.core.context_processors import csrf
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.generic import View
+
 try:
-	from django.contrib.gis.geoip import GeoIP
+    from django.contrib.gis.geoip import GeoIP
 except ImportError:
-	# TODO: Fallback
-	import pygeoip as GeoIP
+    # TODO: Fallback
+    import pygeoip as GeoIP
 
 from .models import Online, AnonymousOnline
-from notification import ajax_log
 from libs import MustBeAjaxMixin
+
+L = logging.getLogger("whosonline")
 
 
 def remove_older():
@@ -130,7 +133,7 @@ def set_offline(request):
         remove_older()
 
     except Exception as e:
-        ajax_log("online.views.Set_offline: %s " % e)
+        L.error(u"online.views.Set_offline: %s " % e)
 
     return HttpResponse('')
 
@@ -172,7 +175,7 @@ def get_whos_online(request):
         return HttpResponse(json.dumps(data), content_type="application/json")
 
     except Exception as e:
-        ajax_log("online.views.get_whos_online : %s " % e)
+        L.error(u"online.views.get_whos_online : %s " % e)
 
     return HttpResponse('{}', content_type="application/json")
 
