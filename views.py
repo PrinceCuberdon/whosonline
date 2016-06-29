@@ -20,16 +20,23 @@
 #   connection with the software or the use or other dealings in the Software.
 
 import json
+import logging
 
 from django.core.context_processors import csrf
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.generic import View
-from django.contrib.gis.geoip import GeoIP
+
+try:
+    from django.contrib.gis.geoip import GeoIP
+except ImportError:
+    # TODO: Fallback
+    import pygeoip as GeoIP
 
 from .models import Online, AnonymousOnline
-from notification import ajax_log
 from libs import MustBeAjaxMixin
+
+L = logging.getLogger("whosonline")
 
 
 def remove_older():
@@ -87,7 +94,7 @@ def set_online(request):
                 online.last_visit = timezone.now()
                 online.online = True
 
-            online.referer = request.META.get('HTTP_REFERER', 'Unknown referer')
+            online.referer = request.META.get('HTTP_REFERER')
             online.save()
         else:
             if 'HTTP_X_REAL_IP' in request.META:
@@ -102,7 +109,7 @@ def set_online(request):
             if not created:
                 anon.last_visit = timezone.now()
 
-            anon.referer = request.META.get('HTTP_REFERER', 'Unknown referer')
+            anon.referer = request.META.get('HTTP_REFERER')
             anon.save()
         remove_older()
 
@@ -126,7 +133,7 @@ def set_offline(request):
         remove_older()
 
     except Exception as e:
-        ajax_log("online.views.Set_offline: %s " % e)
+        L.error(u"online.views.Set_offline: %s " % e)
 
     return HttpResponse('')
 
@@ -168,7 +175,7 @@ def get_whos_online(request):
         return HttpResponse(json.dumps(data), content_type="application/json")
 
     except Exception as e:
-        ajax_log("online.views.get_whos_online : %s " % e)
+        L.error(u"online.views.get_whos_online : %s " % e)
 
     return HttpResponse('{}', content_type="application/json")
 
