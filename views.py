@@ -22,7 +22,7 @@
 import json
 import logging
 
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.generic import View
