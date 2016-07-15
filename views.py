@@ -27,16 +27,17 @@ from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.generic import View
 
-try:
-    from django.contrib.gis.geoip import GeoIP
-except ImportError:
-    # TODO: Fallback
-    import pygeoip as GeoIP
+from django.contrib.gis.geoip import HAS_GEOIP
 
 from .models import Online, AnonymousOnline
 from libs import MustBeAjaxMixin
 
+if HAS_GEOIP:
+    from django.contrib.gis.geoip import GeoIP
+
 L = logging.getLogger("whosonline")
+
+L.error("whosonline.views : The GeoIP library is missing")
 
 
 def remove_older():
@@ -94,7 +95,7 @@ def set_online(request):
                 online.last_visit = timezone.now()
                 online.online = True
 
-            online.referer = request.META.get('HTTP_REFERER')
+            online.referer = request.META.get('HTTP_REFERER', 'CAUTION_NO_REFERER')
             online.save()
         else:
             if 'HTTP_X_REAL_IP' in request.META:
@@ -109,12 +110,13 @@ def set_online(request):
             if not created:
                 anon.last_visit = timezone.now()
 
-            anon.referer = request.META.get('HTTP_REFERER')
+            anon.referer = request.META.get('HTTP_REFERER', 'CAUTION_NO_REFERER')
             anon.save()
         remove_older()
 
-    except:
+    except Exception as e:
         """ sometime the database is not enougth fast. So we remove all keys """
+        L.error("whosonline.views.set_online. Error occured %s" % e.message)
         AnonymousOnline.objects.filter(key=token).delete()
 
     return HttpResponse('')
@@ -150,7 +152,7 @@ def get_whos_online(request):
         }
 
         flags = []
-        if data['visitors'] > 0:
+        if data['visitors'] > 0 and HAS_GEOIP:
             geoip = GeoIP()
             for ip in AnonymousOnline.objects.all().only('ip'):
                 country = geoip.country(str(ip.ip))
@@ -166,15 +168,17 @@ def get_whos_online(request):
                 codes.append(flag['code'])
                 data['flags'].append(flag)
 
-        for user in Online.objects.filter(online=True):
-            data['users'].append({
-                'pk': user.user.pk,
-                'avatar': user.user.profile.avatar_or_default(),
-                'user': user.user.username
-            })
+        data['users'] = [{
+                             'pk': ol.user.pk,
+                             'avatar': ol.user.profile.avatar_or_default(),
+                             'user': ol.user.username
+
+                         } for ol in Online.objects.filter(online=True)]
+
         return HttpResponse(json.dumps(data), content_type="application/json")
 
     except Exception as e:
+        print e
         L.error(u"online.views.get_whos_online : %s " % e)
 
     return HttpResponse('{}', content_type="application/json")
@@ -192,7 +196,7 @@ def admin_get_whos_online(request):
     for anon in list(AnonymousOnline.objects.all()):
         data['anonymous'].append({
             'user': 'Anonymous : {0}'.format(anon.ip),
-            'country': geoip.country(str(anon.ip)),
+            'country': geoip.country(str(anon.ip)) if HAS_GEOIP else '',
             'url': anon.referer,
             'time': str(anon.last_visit)
         })

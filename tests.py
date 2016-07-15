@@ -135,15 +135,20 @@ class TestView(TestCase):
 
     def test_get_whos_online_simple(self):
         """ Test values and types """
+
+        # Create a client and connect to add someone into the db
         c = self._create_session_client()
         response = c.get(reverse('whosonline'))
         self.assertEqual(response['Content-Type'], "application/json")
+
+        # Get the number of cliens connected
         response = json.loads(response.content)
         self.assertIsInstance(response, dict)
         self.assertEqual(len(response.keys()), 3)
-        self.assertTrue(response.has_key('visitors'))
-        self.assertTrue(response.has_key('flags'))
-        self.assertTrue(response.has_key('users'))
+
+        self.assertTrue('visitors' in response)
+        self.assertTrue('flags' in response)
+        self.assertTrue('users' in response)
 
         self.assertEqual(response['visitors'], 1)
         self.assertIsInstance(response['flags'], list)
@@ -166,12 +171,15 @@ class TestView(TestCase):
         c = self._create_session_client()
         response = c.get(reverse('whosonline'))
         result = json.loads(response.content)
-        self.assertTrue(result.has_key('flags'))
+        self.assertTrue('flags' in result)
         flags = result['flags']
         self.assertIsInstance(flags, list)
-        location = flags[0]
-        self.assertIsInstance(location, dict)
-        self.assertTrue(location.has_key('code'))
-        self.assertTrue(location.has_key('name'))
-        self.assertEqual(location['code'], u"de")
-        self.assertEqual(location['name'].lower(), u"germany")
+
+        # With no GeoIP flags are empty
+        if flags:
+            location = flags[0]
+            self.assertIsInstance(location, dict)
+            self.assertTrue('code' in location)
+            self.assertTrue('name' in location)
+            self.assertEqual(location['code'], u"de")
+            self.assertEqual(location['name'].lower(), u"germany")
