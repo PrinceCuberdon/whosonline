@@ -37,8 +37,6 @@ if HAS_GEOIP:
 
 L = logging.getLogger("whosonline")
 
-L.error("whosonline.views : The GeoIP library is missing")
-
 
 def remove_older():
     """ Remove old anonymous and  and set users offline if  last_visit - 60 secs
@@ -85,6 +83,10 @@ def set_online(request):
     """ Set the user online. We use csrf_token cause a Chrome private navigation
     bug. """
     token = request.session.session_key
+    if not token:
+        request.session.create()
+        token = request.session.session_key
+
     try:
         if request.user.is_authenticated():
             online, created = Online.objects.get_or_create(user=request.user, defaults={
@@ -116,7 +118,7 @@ def set_online(request):
 
     except Exception as e:
         """ sometime the database is not enougth fast. So we remove all keys """
-        L.error("whosonline.views.set_online. Error occured %s" % e.message)
+        L.error("whosonline.views.set_online. Error occured {error}".format(error=e))
         AnonymousOnline.objects.filter(key=token).delete()
 
     return HttpResponse('')
@@ -135,7 +137,7 @@ def set_offline(request):
         remove_older()
 
     except Exception as e:
-        L.error(u"online.views.Set_offline: %s " % e)
+        L.error(u"online.views.Set_offline: {error} ".format(error=e))
 
     return HttpResponse('')
 
@@ -178,8 +180,7 @@ def get_whos_online(request):
         return HttpResponse(json.dumps(data), content_type="application/json")
 
     except Exception as e:
-        print e
-        L.error(u"online.views.get_whos_online : %s " % e)
+        L.error(u"online.views.get_whos_online : {error} ".format(error=e))
 
     return HttpResponse('{}', content_type="application/json")
 
