@@ -44,7 +44,9 @@ class Online(models.Model):
         max_length=200,
         verbose_name="Derniere visite",
         help_text="Derniere page visitee.",
-        default="Non Applicable"
+        default="Non Applicable",
+        null=True,
+        blank=True
     )
 
     def __unicode__(self):
@@ -76,7 +78,9 @@ class AnonymousOnline(models.Model):
     referer = models.CharField(
         max_length=200,
         verbose_name="Derniere visite",
-        help_text="Derniere page visitee."
+        help_text="Derniere page visitee.",
+        null=True,
+        blank=True
     )
 
     def __unicode__(self):
