@@ -27,13 +27,14 @@ from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.generic import View
 
-from django.contrib.gis.geoip import HAS_GEOIP
+# from django.contrib.gis.geoip import HAS_GEOIP
 
 from .models import Online, AnonymousOnline
 from libs import MustBeAjaxMixin
 
-if HAS_GEOIP:
-    from django.contrib.gis.geoip import GeoIP
+# if HAS_GEOIP:
+    #from django.contrib.gis.geoip import GeoIP
+HAS_GEOIP = False
 
 L = logging.getLogger("whosonline")
 
@@ -154,21 +155,21 @@ def get_whos_online(request):
         }
 
         flags = []
-        if data['visitors'] > 0 and HAS_GEOIP:
-            geoip = GeoIP()
-            for ip in AnonymousOnline.objects.all().only('ip'):
-                country = geoip.country(str(ip.ip))
-                if country['country_code'] is not None:
-                    flags.append({
-                        'code': country['country_code'].lower(),
-                        'name': country['country_name']}
-                    )
-            codes = []
-            for flag in flags:
-                if flag['code'] in codes:
-                    continue
-                codes.append(flag['code'])
-                data['flags'].append(flag)
+        # if data['visitors'] > 0 and HAS_GEOIP:
+        #     geoip = GeoIP()
+        #     for ip in AnonymousOnline.objects.all().only('ip'):
+        #         country = geoip.country(str(ip.ip))
+        #         if country['country_code'] is not None:
+        #             flags.append({
+        #                 'code': country['country_code'].lower(),
+        #                 'name': country['country_name']}
+        #             )
+        #     codes = []
+        #     for flag in flags:
+        #         if flag['code'] in codes:
+        #             continue
+        #         codes.append(flag['code'])
+        #         data['flags'].append(flag)
 
         data['users'] = [{
                              'pk': ol.user.pk,
@@ -193,11 +194,11 @@ def admin_get_whos_online(request):
         'hunters': []
     }
 
-    geoip = GeoIP()
+    # geoip = GeoIP()
     for anon in list(AnonymousOnline.objects.all()):
         data['anonymous'].append({
             'user': 'Anonymous : {0}'.format(anon.ip),
-            'country': geoip.country(str(anon.ip)) if HAS_GEOIP else '',
+            'country': 'Unknown',  #geoip.country(str(anon.ip)) if HAS_GEOIP else '',
             'url': anon.referer,
             'time': str(anon.last_visit)
         })
